@@ -1,0 +1,74 @@
+name: Generate LeetCode Java File
+
+on:
+  workflow_dispatch:
+    inputs:
+      filename:
+        description: 'Filename for the new LeetCode problem (e.g., 001-Two-Sum)'
+        required: true
+        type: string
+      language:
+        description: 'Programming language (default: java)'
+        required: false
+        default: 'java'
+        type: string
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📦 Checkout the repository
+        uses: actions/checkout@v3
+
+      - name: ⚙️ Set up Git config for commit
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+
+      - name: 🧠 Parse input & create boilerplate
+        run: |
+          FILENAME="${{ github.event.inputs.filename }}"
+          LANG="${{ github.event.inputs.language }}"
+          DIR="solutions"
+          EXT=""
+
+          mkdir -p "$DIR"
+
+          if [ "$LANG" = "java" ]; then
+            EXT="java"
+            FILEPATH="${DIR}/${FILENAME}.${EXT}"
+            echo "// Problem: $FILENAME" > "$FILEPATH"
+            echo "public class Solution {" >> "$FILEPATH"
+            echo "    public static void main(String[] args) {" >> "$FILEPATH"
+            echo "        // Your code goes here" >> "$FILEPATH"
+            echo "    }" >> "$FILEPATH"
+            echo "}" >> "$FILEPATH"
+          
+          elif [ "$LANG" = "py" ]; then
+            EXT="py"
+            FILEPATH="${DIR}/${FILENAME}.${EXT}"
+            echo "# Problem: $FILENAME" > "$FILEPATH"
+            echo "def solution():" >> "$FILEPATH"
+            echo "    pass" >> "$FILEPATH"
+
+          elif [ "$LANG" = "cpp" ]; then
+            EXT="cpp"
+            FILEPATH="${DIR}/${FILENAME}.${EXT}"
+            echo "// Problem: $FILENAME" > "$FILEPATH"
+            echo "#include <iostream>" >> "$FILEPATH"
+            echo "int main() {" >> "$FILEPATH"
+            echo "    // Your code here" >> "$FILEPATH"
+            echo "    return 0;" >> "$FILEPATH"
+            echo "}" >> "$FILEPATH"
+
+          else
+            echo "❌ Unsupported language: $LANG"
+            exit 1
+          fi
+
+      - name: ✅ Commit & push generated file
+        run: |
+          git add .
+          git commit -m "📘 Add LeetCode solution: ${{ github.event.inputs.filename }} in ${{ github.event.inputs.language }}"
+          git push
