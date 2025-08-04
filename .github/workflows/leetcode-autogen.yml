@@ -31,15 +31,16 @@ jobs:
           FILENAME="${{ github.event.inputs.filename }}"
           LANG="${{ github.event.inputs.language }}"
           DIR="solutions"
-          EXT=""
           mkdir -p "$DIR"
 
-          # Sanitize filename (optional)
-          SAFE_FILENAME=$(echo "$FILENAME" | tr ' ' '_' | tr -cd '[:alnum:]_-')
+          # Sanitize and format filename
+          SAFE_FILENAME=$(echo "$FILENAME" | xargs | tr ' ' '_' | tr -cd '[:alnum:]_-')
+          EXT=""
+          FILEPATH="${DIR}/${SAFE_FILENAME}"
 
           if [ "$LANG" = "java" ]; then
             EXT="java"
-            FILEPATH="${DIR}/${SAFE_FILENAME}.${EXT}"
+            FILEPATH="${FILEPATH}.${EXT}"
             echo "// Problem: $FILENAME" > "$FILEPATH"
             echo "public class Solution {" >> "$FILEPATH"
             echo "    public static void main(String[] args) {" >> "$FILEPATH"
@@ -49,14 +50,14 @@ jobs:
 
           elif [ "$LANG" = "py" ]; then
             EXT="py"
-            FILEPATH="${DIR}/${SAFE_FILENAME}.${EXT}"
+            FILEPATH="${FILEPATH}.${EXT}"
             echo "# Problem: $FILENAME" > "$FILEPATH"
             echo "def solution():" >> "$FILEPATH"
             echo "    pass" >> "$FILEPATH"
 
           elif [ "$LANG" = "cpp" ]; then
             EXT="cpp"
-            FILEPATH="${DIR}/${SAFE_FILENAME}.${EXT}"
+            FILEPATH="${FILEPATH}.${EXT}"
             echo "// Problem: $FILENAME" > "$FILEPATH"
             echo "#include <iostream>" >> "$FILEPATH"
             echo "int main() {" >> "$FILEPATH"
@@ -73,7 +74,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          git fetch origin main
+          git rebase origin/main
+
           git add solutions/
-          git commit -m "📘 Add LeetCode solution: ${{ github.event.inputs.filename }} in ${{ github.event.inputs.language }}" || echo "Nothing to commit"
-          git push origin HEAD
-            echo "✅ File generated and pushed successfully: $FILEPATH"
+          git commit -m "📘 Add LeetCode solution: ${{ github.event.inputs.filename }} in ${{ github.event.inputs.language }}" || echo "🟡 Nothing to commit"
+          git push origin HEAD || echo "⚠️ Push failed"
